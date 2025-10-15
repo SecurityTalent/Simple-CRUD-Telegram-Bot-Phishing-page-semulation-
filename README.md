@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="project-POC-Screenshot.png" alt="Project POC Screenshot" width="600"/>
+  <img src="https://raw.githubusercontent.com/SecurityTalent/Simple-CRUD-Telegram-Bot-Phishing-page-semulation-/refs/heads/main/Screenshot.png" alt="Project POC Screenshot" width="600"/>
 </p>
 
 <blockquote>
